@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Loading...</title>
+    <link id="favicon" rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🔗</text></svg>">
+    <style>
+        /* --- 核心 CSS (所有人都會載入) --- */
+        :root { --primary: #2c3e50; --bg: #f4f7f6; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; background: var(--bg); color: #333; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+        .hidden { display: none !important; }
+        
+        /* 載入動畫 (Spinner) */
+        .loader { border: 4px solid #e1e1e1; border-top: 4px solid var(--primary); border-radius: 50%; width: 40px; height: 40px; animation: spin 0.8s linear infinite; margin: 0 auto 15px; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
+        /* 錯誤訊息 */
+        .error-box { background: #ffeaea; color: #c0392b; padding: 15px; border-radius: 8px; text-align: center; max-width: 90%; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+
+        /* --- 管理介面 CSS (登入後才顯示) --- */
+        #app-container { width: 100%; max-width: 600px; padding: 20px; box-sizing: border-box; }
+        .card { background: white; padding: 30px; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); text-align: center; transition: transform 0.2s; }
+        h1 { margin: 0 0 10px; color: var(--primary); font-size: 1.8rem; }
+        p.subtitle { color: #7f8c8d; margin-top: 0; font-size: 0.9rem; }
+        
+        input { width: 100%; padding: 12px; margin: 10px 0; border: 2px solid #eee; border-radius: 8px; font-size: 1rem; box-sizing: border-box; transition: 0.3s; }
+        input:focus { border-color: var(--primary); outline: none; }
+        
+        button { background: var(--primary); color: white; border: none; padding: 12px 25px; border-radius: 8px; font-size: 1rem; cursor: pointer; width: 100%; margin-top: 10px; font-weight: bold; transition: 0.2s; }
+        button:hover { opacity: 0.9; transform: translateY(-1px); }
+        button:disabled { background: #bdc3c7; cursor: not-allowed; transform: none; }
+        button.secondary { background: #ecf0f1; color: #7f8c8d; }
+        button.small { width: auto; padding: 6px 12px; font-size: 0.85rem; margin: 0; }
+        button.danger { background: #e74c3c; }
+
+        /* 列表樣式 */
+        .link-item { border-bottom: 1px solid #eee; padding: 15px 0; text-align: left; display: flex; justify-content: space-between; align-items: center; }
+        .link-info h3 { margin: 0 0 5px; font-size: 1rem; color: var(--primary); }
+        .link-meta { font-size: 0.75rem; color: #95a5a6; }
+        .link-actions { display: flex; gap: 5px; }
+
+        /* QR Modal */
+        .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: flex; justify-content: center; align-items: center; z-index: 999; backdrop-filter: blur(3px); }
+        .modal-content { background: white; padding: 30px; border-radius: 16px; width: 90%; max-width: 350px; text-align: center; }
+        #logo-preview { max-height: 60px; margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+
+    <div id="loading-view" style="text-align: center;">
+        <div class="loader"></div>
+        <p id="loading-text" style="color:#7f8c8d; font-size:0.9rem;">Redirecting...</p>
+    </div>
+
+    <div id="error-view" class="hidden">
+        <div class="error-box">
+            <h3>⚠️ 連結無效</h3>
+            <p id="error-msg">找不到此頁面</p>
+        </div>
+    </div>
+
+    <div id="app-container" class="hidden">
+        <div id="login-card" class="card">
+            <img id="brand-logo" src="" alt="Logo" class="hidden" style="height:60px; margin-bottom:10px;">
+            <h1 id="brand-title">Admin Login</h1>
+            <p class="subtitle">Please verify your identity</p>
+            <input type="password" id="admin-pwd" placeholder="Enter Password">
+            <button onclick="handleLogin()">Login System</button>
+        </div>
+
+        <div id="dashboard-card" class="card hidden" style="text-align: left;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                <h2 style="margin:0;">Dashboard</h2>
+                <button class="small secondary" onclick="logout()">Logout</button>
+            </div>
+            
+            <div style="background:#f9f9f9; padding:15px; border-radius:8px; margin-bottom:20px;">
+                <input type="url" id="new-url" placeholder="Original Long URL (https://...)" onchange="autoFillTitle()">
+                <input type="text" id="new-title" placeholder="Title (Auto-fetched if empty)">
+                <div style="display:flex; gap:10px;">
+                    <input type="text" id="new-shortid" placeholder="Custom ID (Optional)" style="width:40%;">
+                    <input type="text" id="new-note" placeholder="Note (Optional)">
+                </div>
+                <button onclick="createLink()" id="btn-create">✨ Create Short Link</button>
+            </div>
+
+            <div id="links-list">
+                <div class="loader"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="qr-modal" class="modal hidden">
+        <div class="modal-content">
+            <h3>QR Code</h3>
+            <div id="qr-canvas"></div>
+            <br>
+            <button onclick="downloadQR()">Download PNG</button>
+            <button class="secondary" onclick="closeQR()">Close</button>
+        </div>
+    </div>
+
+    <script>
+        // ★★★ 請在此填入您的 GAS Web App URL ★★★
+        const GAS_URL = "https://script.google.com/macros/s/您的ID/exec"; 
+        
+        // 全域變數
+        let config = {};
+        const urlParams = new URLSearchParams(window.location.search);
+        const linkId = urlParams.get('id');
+
+        // --- 核心入口 ---
+        (function init(){
+            if (linkId) {
+                // [模式 A] 訪客轉址模式
+                executeRedirect(linkId);
+            } else {
+                // [模式 B] 管理員模式
+                initAdminView();
+            }
+        })();
+
+        // --- [A] 訪客轉址邏輯 ---
+        function executeRedirect(id) {
+            document.getElementById('loading-text').innerText = "Processing...";
+            
+            // 呼叫後端 API
+            fetch(`${GAS_URL}?action=getLink&id=${id}`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status === "success") {
+                        // 1. GA4 追蹤 (如果後端有回傳 GA ID)
+                        if (data.ga) {
+                            loadGA(data.ga);
+                            gtag('event', 'short_link_click', {
+                                'event_category': 'engagement',
+                                'event_label': id
+                            });
+                        }
+                        // 2. 執行轉址
+                        document.getElementById('loading-text').innerText = "Redirecting to destination...";
+                        setTimeout(() => {
+                            window.location.replace(data.url);
+                        }, 200); // 給 GA 一點點時間發送，不阻擋太久
+                    } else {
+                        showError(data.message);
+                    }
+                })
+                .catch(err => showError("Network Error"));
+        }
+
+        // --- [B] 管理員邏輯 ---
+        function initAdminView() {
+            // 隱藏 loading，抓取設定以渲染品牌
+            fetch(`${GAS_URL}?action=getConfig`)
+                .then(r => r.json())
+                .then(res => {
+                    document.getElementById('loading-view').classList.add('hidden');
+                    document.getElementById('app-container').classList.remove('hidden');
+                    
+                    if(res.status === "success") {
+                        config = res.data;
+                        applyBranding(config);
+                    }
+                });
+        }
+
+        function handleLogin() {
+            const pwd = document.getElementById('admin-pwd').value;
+            if(!pwd) return alert("Please enter password");
+
+            const btn = document.querySelector('#login-card button');
+            btn.disabled = true; btn.innerText = "Verifying...";
+
+            // 後端驗證
+            fetch(GAS_URL, {
+                method: "POST",
+                body: JSON.stringify({ action: "login", password: pwd })
+            }).then(r => r.json()).then(d => {
+                if(d.status === "success") {
+                    // 登入成功
+                    document.getElementById('login-card').classList.add('hidden');
+                    document.getElementById('dashboard-card').classList.remove('hidden');
+                    loadLinks();
+                    loadQRLib(); // 懶加載 QR 庫
+                } else {
+                    alert("Wrong Password");
+                    btn.disabled = false; btn.innerText = "Login System";
+                }
+            });
+        }
+
+        function createLink() {
+            const p = {
+                action: "create",
+                url: document.getElementById('new-url').value,
+                title: document.getElementById('new-title').value,
+                shortId: document.getElementById('new-shortid').value,
+                note: document.getElementById('new-note').value
+            };
+            if(!p.url) return alert("URL is required");
+
+            const btn = document.getElementById('btn-create');
+            btn.disabled = true; btn.innerText = "Creating...";
+
+            fetch(GAS_URL, { method:"POST", body:JSON.stringify(p) })
+                .then(r=>r.json()).then(d => {
+                    btn.disabled = false; btn.innerText = "✨ Create Short Link";
+                    if(d.status === "success") {
+                        alert(`Success! Short ID: ${d.shortId}`);
+                        document.getElementById('new-url').value = "";
+                        document.getElementById('new-title').value = "";
+                        document.getElementById('new-shortid').value = "";
+                        loadLinks(); // 重新整理列表
+                    } else {
+                        alert("Error: " + d.message);
+                    }
+                });
+        }
+
+        function loadLinks() {
+            const list = document.getElementById('links-list');
+            list.innerHTML = '<div class="loader"></div>';
+            
+            // 這裡簡化，直接呼叫 getAll。實際建議帶上 token
+            fetch(`${GAS_URL}?action=getAll`)
+                .then(r=>r.json()).then(res => {
+                    if(res.status !== "success") return list.innerHTML = "Load failed";
+                    
+                    let html = "";
+                    const origin = window.location.origin + window.location.pathname;
+                    
+                    res.data.forEach(item => {
+                        const shortUrl = `${origin}?id=${item.shortId}`;
+                        html += `
+                        <div class="link-item">
+                            <div class="link-info">
+                                <h3>${item.title || '(No Title)'}</h3>
+                                <div class="link-meta">
+                                    <a href="${shortUrl}" target="_blank" style="color:#3498db;text-decoration:none;">/${item.shortId}</a> 
+                                    • ${item.clicks} clicks • ${item.date}
+                                </div>
+                            </div>
+                            <div class="link-actions">
+                                <button class="small secondary" onclick="copy('${shortUrl}')">Copy</button>
+                                <button class="small secondary" onclick="showQR('${shortUrl}')">QR</button>
+                                <button class="small danger" onclick="deleteLink('${item.shortId}')">Del</button>
+                            </div>
+                        </div>`;
+                    });
+                    list.innerHTML = html || "<p style='color:#ccc;text-align:center'>No links yet.</p>";
+                });
+        }
+
+        function deleteLink(id) {
+            if(!confirm("Are you sure?")) return;
+            fetch(GAS_URL, {method:"POST", body:JSON.stringify({action:"delete", id:id})})
+                .then(r=>r.json()).then(()=>loadLinks());
+        }
+
+        // --- 輔助功能 ---
+        function applyBranding(cfg) {
+            if(cfg.SystemTitle) document.title = cfg.SystemTitle;
+            if(cfg.ThemeColor) document.documentElement.style.setProperty('--primary', cfg.ThemeColor);
+            if(cfg.PageLogo) {
+                const img = document.getElementById('brand-logo');
+                img.src = cfg.PageLogo;
+                img.classList.remove('hidden');
+            }
+            if(cfg.SiteFavicon) document.getElementById('favicon').href = cfg.SiteFavicon;
+        }
+
+        function showError(msg) {
+            document.getElementById('loading-view').classList.add('hidden');
+            document.getElementById('error-view').classList.remove('hidden');
+            document.getElementById('error-msg').innerText = msg;
+        }
+
+        function copy(text) {
+            navigator.clipboard.writeText(text).then(()=>alert("Copied!"));
+        }
+        
+        function autoFillTitle() {
+             // 這裡先留空，因為我們已將抓標題邏輯移至後端
+        }
+
+        function logout() { location.reload(); }
+
+        // --- 動態載入資源 (Lazy Load) ---
+        let qrLibLoaded = false;
+        let qrCodeObj = null;
+
+        function loadQRLib() {
+            if(qrLibLoaded) return;
+            const script = document.createElement('script');
+            script.src = "https://unpkg.com/qr-code-styling@1.5.0/lib/qr-code-styling.js";
+            script.onload = () => { qrLibLoaded = true; };
+            document.body.appendChild(script);
+        }
+
+        function showQR(url) {
+            if(!qrLibLoaded) return alert("QR Library loading... please wait a second.");
+            document.getElementById('qr-modal').classList.remove('hidden');
+            document.getElementById('qr-canvas').innerHTML = "";
+            
+            qrCodeObj = new QRCodeStyling({
+                width: 250, height: 250,
+                data: url,
+                dotsOptions: { color: config.ThemeColor || "#2c3e50", type: "rounded" },
+                backgroundOptions: { color: "#ffffff" }
+            });
+            qrCodeObj.append(document.getElementById('qr-canvas'));
+        }
+        
+        function downloadQR(){ if(qrCodeObj) qrCodeObj.download({ name: "qr-code", extension: "png" }); }
+        function closeQR(){ document.getElementById('qr-modal').classList.add('hidden'); }
+
+        // --- GA4 整合 ---
+        function loadGA(id) {
+            const script = document.createElement('script');
+            script.src = `https://www.googletagmanager.com/gtag/js?id=${id}`;
+            script.async = true;
+            document.head.appendChild(script);
+            window.dataLayer = window.dataLayer || [];
+            window.gtag = function(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', id);
+        }
+    </script>
+</body>
+</html>

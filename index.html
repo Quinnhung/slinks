@@ -4,219 +4,219 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>系統載入中...</title>
+    <meta property="og:title" content="我的短網址系統">
+    <meta property="og:description" content="專屬連結管理服務">
+    <meta property="og:image" content="https://cdn-icons-png.flaticon.com/512/633/633642.png">
+    
     <link id="favicon" rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🔗</text></svg>">
     <style>
-        /* --- 核心 CSS (所有人都會載入) --- */
-        :root { --primary: #2c3e50; --bg: #f4f7f6; }
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Microsoft JhengHei", "Helvetica Neue", Arial, sans-serif; margin: 0; background: var(--bg); color: #333; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+        :root { --primary: #2c3e50; --accent: #3498db; --bg: #f4f7f6; --danger: #e74c3c; --warn: #f39c12; }
+        body { font-family: "Microsoft JhengHei", -apple-system, sans-serif; margin: 0; background: var(--bg); color: #333; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
         .hidden { display: none !important; }
         
-        /* 載入動畫 (Spinner) */
         .loader { border: 4px solid #e1e1e1; border-top: 4px solid var(--primary); border-radius: 50%; width: 40px; height: 40px; animation: spin 0.8s linear infinite; margin: 0 auto 15px; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         
-        /* 錯誤訊息 */
-        .error-box { background: #ffeaea; color: #c0392b; padding: 15px; border-radius: 8px; text-align: center; max-width: 90%; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+        .error-box { background: #ffeaea; color: #c0392b; padding: 20px; border-radius: 8px; text-align: center; max-width: 90%; box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
+        .expired-box { background: #fff3cd; color: #856404; padding: 20px; border-radius: 8px; text-align: center; max-width: 90%; border: 1px solid #ffeeba; }
 
-        /* --- 管理介面 CSS (登入後才顯示) --- */
-        #app-container { width: 100%; max-width: 600px; padding: 20px; box-sizing: border-box; }
-        .card { background: white; padding: 30px; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); text-align: center; transition: transform 0.2s; }
-        h1 { margin: 0 0 10px; color: var(--primary); font-size: 1.8rem; }
-        p.subtitle { color: #7f8c8d; margin-top: 0; font-size: 0.9rem; }
+        #app-container { width: 100%; max-width: 800px; padding: 20px; box-sizing: border-box; }
+        .card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); text-align: center; margin-bottom: 20px; }
         
-        input { width: 100%; padding: 12px; margin: 10px 0; border: 2px solid #eee; border-radius: 8px; font-size: 1rem; box-sizing: border-box; transition: 0.3s; }
+        input, select { width: 100%; padding: 10px; margin: 5px 0; border: 1px solid #ddd; border-radius: 6px; font-size: 0.95rem; box-sizing: border-box; }
         input:focus { border-color: var(--primary); outline: none; }
         
-        button { background: var(--primary); color: white; border: none; padding: 12px 25px; border-radius: 8px; font-size: 1rem; cursor: pointer; width: 100%; margin-top: 10px; font-weight: bold; transition: 0.2s; }
-        button:hover { opacity: 0.9; transform: translateY(-1px); }
-        button:disabled { background: #bdc3c7; cursor: not-allowed; transform: none; }
-        button.secondary { background: #ecf0f1; color: #7f8c8d; }
-        button.small { width: auto; padding: 6px 12px; font-size: 0.85rem; margin: 0; }
-        button.danger { background: #e74c3c; }
+        button { background: var(--primary); color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-size: 0.95rem; transition: 0.2s; }
+        button:hover { opacity: 0.9; }
+        button.secondary { background: #ecf0f1; color: #555; }
+        button.small { padding: 4px 8px; font-size: 0.8rem; margin-left: 5px; }
+        button.danger { background: var(--danger); }
+        button.warn { background: var(--warn); }
 
-        /* 列表樣式 */
-        .link-item { border-bottom: 1px solid #eee; padding: 15px 0; text-align: left; display: flex; justify-content: space-between; align-items: center; }
-        .link-info h3 { margin: 0 0 5px; font-size: 1rem; color: var(--primary); }
-        .link-meta { font-size: 0.75rem; color: #95a5a6; }
-        .link-actions { display: flex; gap: 5px; }
+        .search-bar { display: flex; gap: 10px; margin-bottom: 15px; }
+        .link-item { border-bottom: 1px solid #eee; padding: 15px 0; text-align: left; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; }
+        .link-info { flex: 1; min-width: 200px; }
+        .link-tags span { background: #eef2f7; color: #555; font-size: 0.75rem; padding: 2px 6px; border-radius: 4px; margin-right: 5px; }
+        .link-meta { font-size: 0.8rem; color: #999; margin-top: 4px; }
+        .expired-tag { color: var(--danger); font-weight: bold; font-size: 0.8rem; border: 1px solid var(--danger); padding: 0 4px; border-radius: 4px; }
 
-        /* QR Modal */
-        .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: flex; justify-content: center; align-items: center; z-index: 999; backdrop-filter: blur(3px); }
-        .modal-content { background: white; padding: 30px; border-radius: 16px; width: 90%; max-width: 350px; text-align: center; }
-        #logo-preview { max-height: 60px; margin-bottom: 10px; }
+        /* Modal */
+        .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; z-index: 1000; backdrop-filter: blur(2px); }
+        .modal-content { background: white; padding: 25px; border-radius: 12px; width: 90%; max-width: 500px; text-align: left; max-height: 90vh; overflow-y: auto; }
+        .form-group { margin-bottom: 10px; }
+        .form-group label { font-size: 0.85rem; font-weight: bold; color: #555; display: block; margin-bottom: 3px; }
+        .row { display: flex; gap: 10px; }
     </style>
 </head>
 <body>
 
     <div id="loading-view" style="text-align: center;">
         <div class="loader"></div>
-        <p id="loading-text" style="color:#7f8c8d; font-size:0.9rem;">系統處理中...</p>
+        <p id="loading-text" style="color:#7f8c8d;">處理中...</p>
     </div>
 
-    <div id="error-view" class="hidden">
-        <div class="error-box">
-            <h3>⚠️ 連結無效</h3>
-            <p id="error-msg">找不到此頁面，請確認網址是否正確。</p>
+    <div id="status-view" class="hidden">
         </div>
-    </div>
 
     <div id="app-container" class="hidden">
         <div id="login-card" class="card">
-            <img id="brand-logo" src="" alt="Logo" class="hidden" style="height:60px; margin-bottom:10px;">
             <h1 id="brand-title">管理員登入</h1>
-            <p class="subtitle">請驗證您的身分以管理連結</p>
             <input type="password" id="admin-pwd" placeholder="請輸入管理密碼">
-            <button onclick="handleLogin()">登入系統</button>
+            <button onclick="handleLogin()" style="width:100%; margin-top:10px;">登入</button>
         </div>
 
-        <div id="dashboard-card" class="card hidden" style="text-align: left;">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-                <h2 style="margin:0;">管理控制台</h2>
-                <button class="small secondary" onclick="logout()">登出</button>
-            </div>
-            
-            <div style="background:#f9f9f9; padding:15px; border-radius:8px; margin-bottom:20px;">
-                <input type="url" id="new-url" placeholder="輸入原始長網址 (https://...)" onchange="autoFillTitle()">
-                <input type="text" id="new-title" placeholder="標題 (留空則自動抓取)">
-                <div style="display:flex; gap:10px;">
-                    <input type="text" id="new-shortid" placeholder="自訂短碼 (選填)" style="width:40%;">
-                    <input type="text" id="new-note" placeholder="備註 (選填)">
+        <div id="dashboard-card" class="hidden">
+            <div class="card" style="text-align: left; padding: 15px 25px;">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <h2 style="margin:0; font-size:1.4rem;">控制台</h2>
+                    <div>
+                        <button onclick="openModal('create')">➕ 新增</button>
+                        <button class="secondary" onclick="logout()">登出</button>
+                    </div>
                 </div>
-                <button onclick="createLink()" id="btn-create">✨ 建立短網址</button>
             </div>
 
-            <div id="links-list">
-                <div class="loader"></div>
+            <div class="card" style="text-align: left;">
+                <div class="search-bar">
+                    <input type="text" id="search-input" placeholder="🔍 搜尋標題、短碼或標籤..." onkeyup="filterLinks()">
+                    <select id="tag-filter" onchange="filterLinks()" style="width: 150px;">
+                        <option value="">所有標籤</option>
+                    </select>
+                </div>
+                <div id="links-list">
+                    <div class="loader"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="edit-modal" class="modal hidden">
+        <div class="modal-content">
+            <h3 id="modal-title" style="margin-top:0;">新增連結</h3>
+            <input type="hidden" id="edit-mode" value="create">
+            
+            <div class="form-group">
+                <label>原始網址 (URL) *</label>
+                <input type="url" id="inp-url" placeholder="https://..." onchange="autoFetchTitle()">
+            </div>
+            
+            <div class="form-group">
+                <label>標題 (Title)</label>
+                <input type="text" id="inp-title" placeholder="留空自動抓取">
+            </div>
+
+            <div class="row">
+                <div class="form-group" style="flex:1">
+                    <label>短代碼 (ID)</label>
+                    <input type="text" id="inp-id" placeholder="留空自動產生">
+                </div>
+                <div class="form-group" style="flex:1">
+                    <label>到期日 (Expiration)</label>
+                    <input type="date" id="inp-expiry">
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="form-group" style="flex:1">
+                    <label>標籤 (Tags, 逗號分隔)</label>
+                    <input type="text" id="inp-tags" placeholder="例如: 行銷, 會議">
+                </div>
+                <div class="form-group" style="flex:1">
+                    <label>備註 (Note)</label>
+                    <input type="text" id="inp-note">
+                </div>
+            </div>
+
+            <div style="margin-top:15px; text-align:right;">
+                <button class="secondary" onclick="closeModal()">取消</button>
+                <button onclick="saveLink()" id="btn-save">儲存</button>
             </div>
         </div>
     </div>
 
     <div id="qr-modal" class="modal hidden">
-        <div class="modal-content">
-            <h3>QR Code 分享</h3>
+        <div class="modal-content" style="text-align: center; width: 300px;">
+            <h3>QR Code</h3>
             <div id="qr-canvas"></div>
             <br>
-            <button onclick="downloadQR()">下載圖片 (PNG)</button>
-            <button class="secondary" onclick="closeQR()">關閉</button>
+            <button onclick="downloadQR()">下載圖片</button>
+            <button class="secondary" onclick="document.getElementById('qr-modal').classList.add('hidden')">關閉</button>
         </div>
     </div>
 
     <script>
-        // ==========================================
-        // ★★★ 設定區：請將下方引號內的網址換成您的 GAS Web App URL ★★★
+        // ★★★ 請替換您的 GAS 網址 ★★★
         const GAS_URL = "https://script.google.com/macros/s/AKfycbxlTu9OlKzukjJV1ztGPOwqEq9m_57kbvq04a0FsP-mbkb3-HG9y5dkN4_d57PuzUVICQ/exec"; 
-        // ==========================================
-
-        // 全域變數
+        
         let config = {};
+        let allLinks = []; // 本地儲存列表以供搜尋
         const urlParams = new URLSearchParams(window.location.search);
         const linkId = urlParams.get('id');
 
-        // --- 核心入口 ---
+        // --- Init ---
         (function init(){
             if (linkId) {
-                // [模式 A] 訪客轉址模式
                 executeRedirect(linkId);
             } else {
-                // [模式 B] 管理員模式
                 initAdminView();
             }
         })();
 
-        // --- [A] 訪客轉址邏輯 ---
+        // --- 訪客邏輯 ---
         function executeRedirect(id) {
-            document.getElementById('loading-text').innerText = "正在讀取資料...";
-            
-            // 呼叫後端 API
+            document.getElementById('loading-text').innerText = "連結解析中...";
             fetch(`${GAS_URL}?action=getLink&id=${id}`)
-                .then(res => res.json())
-                .then(data => {
-                    if (data.status === "success") {
-                        // 1. GA4 追蹤 (如果後端有回傳 GA ID)
-                        if (data.ga) {
-                            loadGA(data.ga);
-                            gtag('event', 'short_link_click', {
-                                'event_category': 'engagement',
-                                'event_label': id
-                            });
-                        }
-                        // 2. 執行轉址
-                        document.getElementById('loading-text').innerText = "正在前往目的地...";
-                        setTimeout(() => {
-                            window.location.replace(data.url);
-                        }, 200); // 給 GA 一點點時間發送，不阻擋太久
+                .then(r => r.json())
+                .then(d => {
+                    if (d.status === "success") {
+                        if (d.ga) { loadGA(d.ga); gtag('event', 'short_link_click', {'event_label': id}); }
+                        document.getElementById('loading-text').innerText = "即將前往...";
+                        setTimeout(() => window.location.replace(d.url), 300);
+                    } else if (d.status === "expired") {
+                        showStatus("⏳ 連結已過期", "此活動或連結已經結束失效。", "expired-box");
                     } else {
-                        showError(data.message === "Link not found" ? "找不到此短網址" : data.message);
+                        showStatus("⚠️ 找不到連結", "請確認網址是否正確。", "error-box");
                     }
                 })
-                .catch(err => showError("網路連線錯誤，請稍後再試"));
+                .catch(() => showStatus("連線錯誤", "請檢查網路連線。", "error-box"));
         }
 
-        // --- [B] 管理員邏輯 ---
+        function showStatus(title, msg, cls) {
+            document.getElementById('loading-view').classList.add('hidden');
+            const view = document.getElementById('status-view');
+            view.innerHTML = `<div class="${cls}"><h3>${title}</h3><p>${msg}</p></div>`;
+            view.classList.remove('hidden');
+        }
+
+        // --- 管理員邏輯 ---
         function initAdminView() {
-            // 隱藏 loading，抓取設定以渲染品牌
-            fetch(`${GAS_URL}?action=getConfig`)
-                .then(r => r.json())
-                .then(res => {
-                    document.getElementById('loading-view').classList.add('hidden');
-                    document.getElementById('app-container').classList.remove('hidden');
-                    
-                    if(res.status === "success") {
-                        config = res.data;
-                        applyBranding(config);
-                    }
-                });
-        }
-
-        function handleLogin() {
-            const pwd = document.getElementById('admin-pwd').value;
-            if(!pwd) return alert("請輸入密碼");
-
-            const btn = document.querySelector('#login-card button');
-            btn.disabled = true; btn.innerText = "驗證中...";
-
-            // 後端驗證
-            fetch(GAS_URL, {
-                method: "POST",
-                body: JSON.stringify({ action: "login", password: pwd })
-            }).then(r => r.json()).then(d => {
-                if(d.status === "success") {
-                    // 登入成功
-                    document.getElementById('login-card').classList.add('hidden');
-                    document.getElementById('dashboard-card').classList.remove('hidden');
-                    loadLinks();
-                    loadQRLib(); // 懶加載 QR 庫
-                } else {
-                    alert("密碼錯誤，請重試");
-                    btn.disabled = false; btn.innerText = "登入系統";
+            fetch(`${GAS_URL}?action=getConfig`).then(r=>r.json()).then(res=>{
+                document.getElementById('loading-view').classList.add('hidden');
+                document.getElementById('app-container').classList.remove('hidden');
+                if(res.status==="success") {
+                    config = res.data;
+                    if(config.SystemTitle) document.title = config.SystemTitle;
+                    // 若有 Config OG 設定，這裡可嘗試動態改 meta (對爬蟲無效，對瀏覽器有效)
                 }
             });
         }
 
-        function createLink() {
-            const p = {
-                action: "create",
-                url: document.getElementById('new-url').value,
-                title: document.getElementById('new-title').value,
-                shortId: document.getElementById('new-shortid').value,
-                note: document.getElementById('new-note').value
-            };
-            if(!p.url) return alert("請輸入網址！");
-
-            const btn = document.getElementById('btn-create');
-            btn.disabled = true; btn.innerText = "處理中...";
-
-            fetch(GAS_URL, { method:"POST", body:JSON.stringify(p) })
-                .then(r=>r.json()).then(d => {
-                    btn.disabled = false; btn.innerText = "✨ 建立短網址";
-                    if(d.status === "success") {
-                        alert(`成功！短網址代碼為： ${d.shortId}`);
-                        document.getElementById('new-url').value = "";
-                        document.getElementById('new-title').value = "";
-                        document.getElementById('new-shortid').value = "";
-                        loadLinks(); // 重新整理列表
+        function handleLogin() {
+            const pwd = document.getElementById('admin-pwd').value;
+            if(!pwd) return;
+            const btn = document.querySelector('#login-card button');
+            btn.innerText = "驗證中..."; btn.disabled = true;
+            
+            fetch(GAS_URL, {method:"POST", body:JSON.stringify({action:"login", password:pwd})})
+                .then(r=>r.json()).then(d=>{
+                    if(d.status==="success") {
+                        document.getElementById('login-card').classList.add('hidden');
+                        document.getElementById('dashboard-card').classList.remove('hidden');
+                        loadLinks();
+                        loadQRLib();
                     } else {
-                        alert("失敗: " + d.message);
+                        alert("密碼錯誤");
+                        btn.innerText = "登入"; btn.disabled = false;
                     }
                 });
         }
@@ -224,113 +224,171 @@
         function loadLinks() {
             const list = document.getElementById('links-list');
             list.innerHTML = '<div class="loader"></div>';
-            
-            // 這裡簡化，直接呼叫 getAll。實際建議帶上 token
-            fetch(`${GAS_URL}?action=getAll`)
-                .then(r=>r.json()).then(res => {
-                    if(res.status !== "success") return list.innerHTML = "載入失敗";
-                    
-                    let html = "";
-                    const origin = window.location.origin + window.location.pathname;
-                    
-                    res.data.forEach(item => {
-                        // 修正結尾斜線問題，確保網址美觀
-                        const baseUrl = origin.endsWith('/') ? origin : origin + '/';
-                        const shortUrl = `${origin}?id=${item.shortId}`;
-                        
-                        html += `
-                        <div class="link-item">
-                            <div class="link-info">
-                                <h3>${item.title || '(無標題)'}</h3>
-                                <div class="link-meta">
-                                    <a href="${shortUrl}" target="_blank" style="color:#3498db;text-decoration:none;">/${item.shortId}</a> 
-                                    • ${item.clicks} 次點擊 • ${item.date}
-                                </div>
-                            </div>
-                            <div class="link-actions">
-                                <button class="small secondary" onclick="copy('${shortUrl}')">複製</button>
-                                <button class="small secondary" onclick="showQR('${shortUrl}')">QR</button>
-                                <button class="small danger" onclick="deleteLink('${item.shortId}')">刪除</button>
-                            </div>
-                        </div>`;
-                    });
-                    list.innerHTML = html || "<p style='color:#ccc;text-align:center'>目前沒有任何連結。</p>";
-                });
+            fetch(`${GAS_URL}?action=getAll`).then(r=>r.json()).then(res=>{
+                if(res.status !== "success") return list.innerHTML = "載入失敗";
+                allLinks = res.data;
+                updateTagFilter(allLinks);
+                renderList(allLinks);
+            });
         }
 
+        function renderList(data) {
+            const list = document.getElementById('links-list');
+            if(data.length === 0) { list.innerHTML = "<p style='text-align:center;color:#999'>無資料</p>"; return; }
+            
+            let html = "";
+            const origin = window.location.origin + window.location.pathname;
+            const today = new Date().toISOString().split('T')[0];
+
+            data.forEach(item => {
+                const shortUrl = `${origin}?id=${item.shortId}`;
+                // 處理標籤
+                const tagsHtml = item.tags ? item.tags.split(',').map(t=>`<span>${t.trim()}</span>`).join('') : '';
+                // 處理過期
+                const isExpired = item.expiry && item.expiry < today;
+                const expiryHtml = isExpired ? `<span class="expired-tag">已過期</span>` : (item.expiry ? `<small>⏳ ${item.expiry}</small>` : '');
+
+                html += `
+                <div class="link-item">
+                    <div class="link-info">
+                        <div style="display:flex; align-items:center; gap:5px;">
+                            <strong>${item.title || '(無標題)'}</strong>
+                            ${expiryHtml}
+                        </div>
+                        <div class="link-tags" style="margin:4px 0;">${tagsHtml}</div>
+                        <div class="link-meta">
+                            <a href="${shortUrl}" target="_blank" style="color:#3498db;text-decoration:none;">/${item.shortId}</a> 
+                            • ${item.clicks} hits • ${item.date}
+                        </div>
+                    </div>
+                    <div class="link-actions">
+                        <button class="small secondary" onclick="copy('${shortUrl}')">複製</button>
+                        <button class="small secondary" onclick="showQR('${shortUrl}')">QR</button>
+                        <button class="small warn" onclick='openModal("edit", ${JSON.stringify(item)})'>✏️</button>
+                        <button class="small danger" onclick="deleteLink('${item.shortId}')">🗑️</button>
+                    </div>
+                </div>`;
+            });
+            list.innerHTML = html;
+        }
+
+        // --- 搜尋與過濾 ---
+        function updateTagFilter(data) {
+            const tags = new Set();
+            data.forEach(i => {
+                if(i.tags) i.tags.split(',').forEach(t => tags.add(t.trim()));
+            });
+            const sel = document.getElementById('tag-filter');
+            sel.innerHTML = '<option value="">所有標籤</option>' + 
+                            Array.from(tags).map(t => `<option value="${t}">${t}</option>`).join('');
+        }
+
+        function filterLinks() {
+            const term = document.getElementById('search-input').value.toLowerCase();
+            const tag = document.getElementById('tag-filter').value;
+            
+            const filtered = allLinks.filter(i => {
+                const matchTerm = (i.title && i.title.toLowerCase().includes(term)) || 
+                                  (i.shortId && i.shortId.toLowerCase().includes(term)) ||
+                                  (i.tags && i.tags.toLowerCase().includes(term));
+                const matchTag = tag ? (i.tags && i.tags.includes(tag)) : true;
+                return matchTerm && matchTag;
+            });
+            renderList(filtered);
+        }
+
+        // --- Modal & Form ---
+        function openModal(mode, item = null) {
+            const m = document.getElementById('edit-modal');
+            m.classList.remove('hidden');
+            document.getElementById('edit-mode').value = mode;
+            
+            // 重置/填入表單
+            if (mode === 'create') {
+                document.getElementById('modal-title').innerText = "新增連結";
+                document.getElementById('inp-id').disabled = false;
+                clearForm();
+            } else {
+                document.getElementById('modal-title').innerText = "編輯連結";
+                document.getElementById('inp-id').disabled = true; // 禁止改ID
+                // 填入資料
+                document.getElementById('inp-url').value = item.url;
+                document.getElementById('inp-title').value = item.title;
+                document.getElementById('inp-id').value = item.shortId;
+                document.getElementById('inp-expiry').value = item.expiry || "";
+                document.getElementById('inp-tags').value = item.tags || "";
+                document.getElementById('inp-note').value = item.note || "";
+            }
+        }
+
+        function closeModal() { document.getElementById('edit-modal').classList.add('hidden'); }
+        function clearForm() {
+            ['inp-url','inp-title','inp-id','inp-expiry','inp-tags','inp-note'].forEach(id=>document.getElementById(id).value="");
+        }
+
+        function saveLink() {
+            const mode = document.getElementById('edit-mode').value;
+            const p = {
+                action: mode, // create or update
+                url: document.getElementById('inp-url').value,
+                title: document.getElementById('inp-title').value,
+                shortId: document.getElementById('inp-id').value,
+                expiry: document.getElementById('inp-expiry').value,
+                tags: document.getElementById('inp-tags').value,
+                note: document.getElementById('inp-note').value
+            };
+            
+            if(!p.url) return alert("請輸入網址");
+
+            const btn = document.getElementById('btn-save');
+            btn.disabled = true; btn.innerText = "儲存中...";
+            
+            fetch(GAS_URL, {method:"POST", body:JSON.stringify(p)}).then(r=>r.json()).then(d=>{
+                btn.disabled = false; btn.innerText = "儲存";
+                if(d.status === "success") {
+                    closeModal();
+                    loadLinks(); // 重新整理列表
+                    alert(mode==="create" ? `建立成功: ${d.shortId}` : "更新成功！");
+                } else {
+                    alert("失敗: " + d.message);
+                }
+            });
+        }
+        
+        // --- 其他工具 ---
         function deleteLink(id) {
-            if(!confirm("確定要刪除這個連結嗎？")) return;
+            if(!confirm("確定刪除？無法復原喔！")) return;
             fetch(GAS_URL, {method:"POST", body:JSON.stringify({action:"delete", id:id})})
                 .then(r=>r.json()).then(()=>loadLinks());
         }
-
-        // --- 輔助功能 ---
-        function applyBranding(cfg) {
-            if(cfg.SystemTitle) document.title = cfg.SystemTitle;
-            if(cfg.ThemeColor) document.documentElement.style.setProperty('--primary', cfg.ThemeColor);
-            if(cfg.PageLogo) {
-                const img = document.getElementById('brand-logo');
-                img.src = cfg.PageLogo;
-                img.classList.remove('hidden');
-            }
-            if(cfg.SiteFavicon) document.getElementById('favicon').href = cfg.SiteFavicon;
-        }
-
-        function showError(msg) {
-            document.getElementById('loading-view').classList.add('hidden');
-            document.getElementById('error-view').classList.remove('hidden');
-            document.getElementById('error-msg').innerText = msg;
-        }
-
-        function copy(text) {
-            navigator.clipboard.writeText(text).then(()=>alert("已複製到剪貼簿！"));
-        }
         
-        function autoFillTitle() {
-             // 標題自動抓取已移至後端，前端保持空白即可
-        }
-
+        function autoFetchTitle() { /* 可選實作前端抓取，或留給後端 */ }
+        function copy(t) { navigator.clipboard.writeText(t).then(()=>alert("已複製")); }
         function logout() { location.reload(); }
-
-        // --- 動態載入資源 (Lazy Load) ---
-        let qrLibLoaded = false;
-        let qrCodeObj = null;
-
+        
+        // QR Lib & GA4 (同上個版本，略為縮減以節省篇幅，請保留原本的 loadQRLib, showQR, loadGA)
+        let qrLibLoaded = false, qrCodeObj = null;
         function loadQRLib() {
             if(qrLibLoaded) return;
-            const script = document.createElement('script');
-            script.src = "https://unpkg.com/qr-code-styling@1.5.0/lib/qr-code-styling.js";
-            script.onload = () => { qrLibLoaded = true; };
-            document.body.appendChild(script);
+            const s = document.createElement('script');
+            s.src = "https://unpkg.com/qr-code-styling@1.5.0/lib/qr-code-styling.js";
+            s.onload = () => { qrLibLoaded = true; };
+            document.body.appendChild(s);
         }
-
-        function showQR(url) {
-            if(!qrLibLoaded) return alert("QR Code 元件載入中，請稍候...");
+        function showQR(u) {
+            if(!qrLibLoaded) return alert("Loading QR Lib...");
             document.getElementById('qr-modal').classList.remove('hidden');
             document.getElementById('qr-canvas').innerHTML = "";
-            
-            qrCodeObj = new QRCodeStyling({
-                width: 250, height: 250,
-                data: url,
-                dotsOptions: { color: config.ThemeColor || "#2c3e50", type: "rounded" },
-                backgroundOptions: { color: "#ffffff" }
-            });
+            qrCodeObj = new QRCodeStyling({width:250,height:250,data:u,dotsOptions:{color:config.ThemeColor||"#2c3e50",type:"rounded"}});
             qrCodeObj.append(document.getElementById('qr-canvas'));
         }
-        
-        function downloadQR(){ if(qrCodeObj) qrCodeObj.download({ name: "qr-code", extension: "png" }); }
-        function closeQR(){ document.getElementById('qr-modal').classList.add('hidden'); }
-
-        // --- GA4 整合 ---
+        function downloadQR(){ if(qrCodeObj) qrCodeObj.download({name:"qr", extension:"png"}); }
         function loadGA(id) {
-            const script = document.createElement('script');
-            script.src = `https://www.googletagmanager.com/gtag/js?id=${id}`;
-            script.async = true;
-            document.head.appendChild(script);
-            window.dataLayer = window.dataLayer || [];
-            window.gtag = function(){dataLayer.push(arguments);}
-            gtag('js', new Date());
-            gtag('config', id);
+            const s = document.createElement('script');
+            s.src = `https://www.googletagmanager.com/gtag/js?id=${id}`;
+            s.async=true; document.head.appendChild(s);
+            window.dataLayer=window.dataLayer||[]; window.gtag=function(){dataLayer.push(arguments);}
+            gtag('js',new Date()); gtag('config',id);
         }
     </script>
 </body>

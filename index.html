@@ -4,6 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>系統載入中...</title>
+    
+    <script>
+        // 請在此填入您的 GAS Web App URL
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbxlTu9OlKzukjJV1ztGPOwqEq9m_57kbvq04a0FsP-mbkb3-HG9y5dkN4_d57PuzUVICQ/exec"; 
+        const SYS_VERSION = "v3.1"; // 系統版本號
+    </script>
     <meta property="og:title" content="我的短網址系統">
     <meta property="og:description" content="專屬連結管理服務">
     <meta property="og:image" content="https://cdn-icons-png.flaticon.com/512/633/633642.png">
@@ -39,6 +45,8 @@
         .link-tags span { background: #eef2f7; color: #555; font-size: 0.75rem; padding: 2px 6px; border-radius: 4px; margin-right: 5px; }
         .link-meta { font-size: 0.8rem; color: #999; margin-top: 4px; }
         .expired-tag { color: var(--danger); font-weight: bold; font-size: 0.8rem; border: 1px solid var(--danger); padding: 0 4px; border-radius: 4px; }
+        
+        .version-tag { font-size: 0.75rem; color: #ccc; margin-top: 15px; }
 
         /* Modal */
         .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; z-index: 1000; backdrop-filter: blur(2px); }
@@ -55,14 +63,15 @@
         <p id="loading-text" style="color:#7f8c8d;">處理中...</p>
     </div>
 
-    <div id="status-view" class="hidden">
-        </div>
+    <div id="status-view" class="hidden"></div>
 
     <div id="app-container" class="hidden">
         <div id="login-card" class="card">
+            <img id="brand-logo" src="" alt="Logo" class="hidden" style="height:60px; margin-bottom:10px;">
             <h1 id="brand-title">管理員登入</h1>
             <input type="password" id="admin-pwd" placeholder="請輸入管理密碼">
             <button onclick="handleLogin()" style="width:100%; margin-top:10px;">登入</button>
+            <div id="version-display" class="version-tag"></div>
         </div>
 
         <div id="dashboard-card" class="hidden">
@@ -145,16 +154,19 @@
     </div>
 
     <script>
-        // ★★★ 請替換您的 GAS 網址 ★★★
-        const GAS_URL = "https://script.google.com/macros/s/AKfycbxlTu9OlKzukjJV1ztGPOwqEq9m_57kbvq04a0FsP-mbkb3-HG9y5dkN4_d57PuzUVICQ/exec"; 
-        
+        // 全域變數
         let config = {};
-        let allLinks = []; // 本地儲存列表以供搜尋
+        let allLinks = []; 
         const urlParams = new URLSearchParams(window.location.search);
         const linkId = urlParams.get('id');
 
         // --- Init ---
         (function init(){
+            // 顯示版本號
+            if(document.getElementById('version-display')) {
+                document.getElementById('version-display').innerText = SYS_VERSION;
+            }
+
             if (linkId) {
                 executeRedirect(linkId);
             } else {
@@ -195,8 +207,7 @@
                 document.getElementById('app-container').classList.remove('hidden');
                 if(res.status==="success") {
                     config = res.data;
-                    if(config.SystemTitle) document.title = config.SystemTitle;
-                    // 若有 Config OG 設定，這裡可嘗試動態改 meta (對爬蟲無效，對瀏覽器有效)
+                    applyBranding(config);
                 }
             });
         }
@@ -242,9 +253,7 @@
 
             data.forEach(item => {
                 const shortUrl = `${origin}?id=${item.shortId}`;
-                // 處理標籤
                 const tagsHtml = item.tags ? item.tags.split(',').map(t=>`<span>${t.trim()}</span>`).join('') : '';
-                // 處理過期
                 const isExpired = item.expiry && item.expiry < today;
                 const expiryHtml = isExpired ? `<span class="expired-tag">已過期</span>` : (item.expiry ? `<small>⏳ ${item.expiry}</small>` : '');
 
@@ -264,7 +273,7 @@
                     <div class="link-actions">
                         <button class="small secondary" onclick="copy('${shortUrl}')">複製</button>
                         <button class="small secondary" onclick="showQR('${shortUrl}')">QR</button>
-                        <button class="small warn" onclick='openModal("edit", ${JSON.stringify(item)})'>✏️</button>
+                        <button class="small warn" onclick='openModal("update", ${JSON.stringify(item)})'>✏️</button>
                         <button class="small danger" onclick="deleteLink('${item.shortId}')">🗑️</button>
                     </div>
                 </div>`;
@@ -272,25 +281,18 @@
             list.innerHTML = html;
         }
 
-        // --- 搜尋與過濾 ---
         function updateTagFilter(data) {
             const tags = new Set();
-            data.forEach(i => {
-                if(i.tags) i.tags.split(',').forEach(t => tags.add(t.trim()));
-            });
+            data.forEach(i => { if(i.tags) i.tags.split(',').forEach(t => tags.add(t.trim())); });
             const sel = document.getElementById('tag-filter');
-            sel.innerHTML = '<option value="">所有標籤</option>' + 
-                            Array.from(tags).map(t => `<option value="${t}">${t}</option>`).join('');
+            sel.innerHTML = '<option value="">所有標籤</option>' + Array.from(tags).map(t => `<option value="${t}">${t}</option>`).join('');
         }
 
         function filterLinks() {
             const term = document.getElementById('search-input').value.toLowerCase();
             const tag = document.getElementById('tag-filter').value;
-            
             const filtered = allLinks.filter(i => {
-                const matchTerm = (i.title && i.title.toLowerCase().includes(term)) || 
-                                  (i.shortId && i.shortId.toLowerCase().includes(term)) ||
-                                  (i.tags && i.tags.toLowerCase().includes(term));
+                const matchTerm = (i.title && i.title.toLowerCase().includes(term)) || (i.shortId && i.shortId.toLowerCase().includes(term)) || (i.tags && i.tags.toLowerCase().includes(term));
                 const matchTag = tag ? (i.tags && i.tags.includes(tag)) : true;
                 return matchTerm && matchTag;
             });
@@ -303,15 +305,14 @@
             m.classList.remove('hidden');
             document.getElementById('edit-mode').value = mode;
             
-            // 重置/填入表單
             if (mode === 'create') {
                 document.getElementById('modal-title').innerText = "新增連結";
                 document.getElementById('inp-id').disabled = false;
                 clearForm();
-            } else {
+            } else { // mode === 'update'
                 document.getElementById('modal-title').innerText = "編輯連結";
-                document.getElementById('inp-id').disabled = true; // 禁止改ID
-                // 填入資料
+                document.getElementById('inp-id').disabled = true; 
+                
                 document.getElementById('inp-url').value = item.url;
                 document.getElementById('inp-title').value = item.title;
                 document.getElementById('inp-id').value = item.shortId;
@@ -322,14 +323,12 @@
         }
 
         function closeModal() { document.getElementById('edit-modal').classList.add('hidden'); }
-        function clearForm() {
-            ['inp-url','inp-title','inp-id','inp-expiry','inp-tags','inp-note'].forEach(id=>document.getElementById(id).value="");
-        }
+        function clearForm() { ['inp-url','inp-title','inp-id','inp-expiry','inp-tags','inp-note'].forEach(id=>document.getElementById(id).value=""); }
 
         function saveLink() {
             const mode = document.getElementById('edit-mode').value;
             const p = {
-                action: mode, // create or update
+                action: mode, 
                 url: document.getElementById('inp-url').value,
                 title: document.getElementById('inp-title').value,
                 shortId: document.getElementById('inp-id').value,
@@ -347,7 +346,7 @@
                 btn.disabled = false; btn.innerText = "儲存";
                 if(d.status === "success") {
                     closeModal();
-                    loadLinks(); // 重新整理列表
+                    loadLinks(); 
                     alert(mode==="create" ? `建立成功: ${d.shortId}` : "更新成功！");
                 } else {
                     alert("失敗: " + d.message);
@@ -355,18 +354,22 @@
             });
         }
         
-        // --- 其他工具 ---
         function deleteLink(id) {
             if(!confirm("確定刪除？無法復原喔！")) return;
-            fetch(GAS_URL, {method:"POST", body:JSON.stringify({action:"delete", id:id})})
-                .then(r=>r.json()).then(()=>loadLinks());
+            fetch(GAS_URL, {method:"POST", body:JSON.stringify({action:"delete", id:id})}).then(r=>r.json()).then(()=>loadLinks());
         }
         
-        function autoFetchTitle() { /* 可選實作前端抓取，或留給後端 */ }
+        function applyBranding(cfg) {
+            if(cfg.SystemTitle) document.title = cfg.SystemTitle;
+            if(cfg.ThemeColor) document.documentElement.style.setProperty('--primary', cfg.ThemeColor);
+            if(cfg.PageLogo) { document.getElementById('brand-logo').src = cfg.PageLogo; document.getElementById('brand-logo').classList.remove('hidden'); }
+            if(cfg.SiteFavicon) document.getElementById('favicon').href = cfg.SiteFavicon;
+        }
+
+        function autoFetchTitle() { }
         function copy(t) { navigator.clipboard.writeText(t).then(()=>alert("已複製")); }
         function logout() { location.reload(); }
         
-        // QR Lib & GA4 (同上個版本，略為縮減以節省篇幅，請保留原本的 loadQRLib, showQR, loadGA)
         let qrLibLoaded = false, qrCodeObj = null;
         function loadQRLib() {
             if(qrLibLoaded) return;

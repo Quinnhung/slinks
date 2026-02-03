@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Loading...</title>
+    <title>系統載入中...</title>
     <link id="favicon" rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🔗</text></svg>">
     <style>
         /* --- 核心 CSS (所有人都會載入) --- */
         :root { --primary: #2c3e50; --bg: #f4f7f6; }
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; background: var(--bg); color: #333; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Microsoft JhengHei", "Helvetica Neue", Arial, sans-serif; margin: 0; background: var(--bg); color: #333; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
         .hidden { display: none !important; }
         
         /* 載入動畫 (Spinner) */
@@ -50,39 +50,39 @@
 
     <div id="loading-view" style="text-align: center;">
         <div class="loader"></div>
-        <p id="loading-text" style="color:#7f8c8d; font-size:0.9rem;">Redirecting...</p>
+        <p id="loading-text" style="color:#7f8c8d; font-size:0.9rem;">系統處理中...</p>
     </div>
 
     <div id="error-view" class="hidden">
         <div class="error-box">
             <h3>⚠️ 連結無效</h3>
-            <p id="error-msg">找不到此頁面</p>
+            <p id="error-msg">找不到此頁面，請確認網址是否正確。</p>
         </div>
     </div>
 
     <div id="app-container" class="hidden">
         <div id="login-card" class="card">
             <img id="brand-logo" src="" alt="Logo" class="hidden" style="height:60px; margin-bottom:10px;">
-            <h1 id="brand-title">Admin Login</h1>
-            <p class="subtitle">Please verify your identity</p>
-            <input type="password" id="admin-pwd" placeholder="Enter Password">
-            <button onclick="handleLogin()">Login System</button>
+            <h1 id="brand-title">管理員登入</h1>
+            <p class="subtitle">請驗證您的身分以管理連結</p>
+            <input type="password" id="admin-pwd" placeholder="請輸入管理密碼">
+            <button onclick="handleLogin()">登入系統</button>
         </div>
 
         <div id="dashboard-card" class="card hidden" style="text-align: left;">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-                <h2 style="margin:0;">Dashboard</h2>
-                <button class="small secondary" onclick="logout()">Logout</button>
+                <h2 style="margin:0;">管理控制台</h2>
+                <button class="small secondary" onclick="logout()">登出</button>
             </div>
             
             <div style="background:#f9f9f9; padding:15px; border-radius:8px; margin-bottom:20px;">
-                <input type="url" id="new-url" placeholder="Original Long URL (https://...)" onchange="autoFillTitle()">
-                <input type="text" id="new-title" placeholder="Title (Auto-fetched if empty)">
+                <input type="url" id="new-url" placeholder="輸入原始長網址 (https://...)" onchange="autoFillTitle()">
+                <input type="text" id="new-title" placeholder="標題 (留空則自動抓取)">
                 <div style="display:flex; gap:10px;">
-                    <input type="text" id="new-shortid" placeholder="Custom ID (Optional)" style="width:40%;">
-                    <input type="text" id="new-note" placeholder="Note (Optional)">
+                    <input type="text" id="new-shortid" placeholder="自訂短碼 (選填)" style="width:40%;">
+                    <input type="text" id="new-note" placeholder="備註 (選填)">
                 </div>
-                <button onclick="createLink()" id="btn-create">✨ Create Short Link</button>
+                <button onclick="createLink()" id="btn-create">✨ 建立短網址</button>
             </div>
 
             <div id="links-list">
@@ -93,18 +93,20 @@
 
     <div id="qr-modal" class="modal hidden">
         <div class="modal-content">
-            <h3>QR Code</h3>
+            <h3>QR Code 分享</h3>
             <div id="qr-canvas"></div>
             <br>
-            <button onclick="downloadQR()">Download PNG</button>
-            <button class="secondary" onclick="closeQR()">Close</button>
+            <button onclick="downloadQR()">下載圖片 (PNG)</button>
+            <button class="secondary" onclick="closeQR()">關閉</button>
         </div>
     </div>
 
     <script>
-        // ★★★ 請在此填入您的 GAS Web App URL ★★★
+        // ==========================================
+        // ★★★ 設定區：請將下方引號內的網址換成您的 GAS Web App URL ★★★
         const GAS_URL = "https://script.google.com/macros/s/AKfycbxlTu9OlKzukjJV1ztGPOwqEq9m_57kbvq04a0FsP-mbkb3-HG9y5dkN4_d57PuzUVICQ/exec"; 
-        
+        // ==========================================
+
         // 全域變數
         let config = {};
         const urlParams = new URLSearchParams(window.location.search);
@@ -123,7 +125,7 @@
 
         // --- [A] 訪客轉址邏輯 ---
         function executeRedirect(id) {
-            document.getElementById('loading-text').innerText = "Processing...";
+            document.getElementById('loading-text').innerText = "正在讀取資料...";
             
             // 呼叫後端 API
             fetch(`${GAS_URL}?action=getLink&id=${id}`)
@@ -139,15 +141,15 @@
                             });
                         }
                         // 2. 執行轉址
-                        document.getElementById('loading-text').innerText = "Redirecting to destination...";
+                        document.getElementById('loading-text').innerText = "正在前往目的地...";
                         setTimeout(() => {
                             window.location.replace(data.url);
                         }, 200); // 給 GA 一點點時間發送，不阻擋太久
                     } else {
-                        showError(data.message);
+                        showError(data.message === "Link not found" ? "找不到此短網址" : data.message);
                     }
                 })
-                .catch(err => showError("Network Error"));
+                .catch(err => showError("網路連線錯誤，請稍後再試"));
         }
 
         // --- [B] 管理員邏輯 ---
@@ -168,10 +170,10 @@
 
         function handleLogin() {
             const pwd = document.getElementById('admin-pwd').value;
-            if(!pwd) return alert("Please enter password");
+            if(!pwd) return alert("請輸入密碼");
 
             const btn = document.querySelector('#login-card button');
-            btn.disabled = true; btn.innerText = "Verifying...";
+            btn.disabled = true; btn.innerText = "驗證中...";
 
             // 後端驗證
             fetch(GAS_URL, {
@@ -185,8 +187,8 @@
                     loadLinks();
                     loadQRLib(); // 懶加載 QR 庫
                 } else {
-                    alert("Wrong Password");
-                    btn.disabled = false; btn.innerText = "Login System";
+                    alert("密碼錯誤，請重試");
+                    btn.disabled = false; btn.innerText = "登入系統";
                 }
             });
         }
@@ -199,22 +201,22 @@
                 shortId: document.getElementById('new-shortid').value,
                 note: document.getElementById('new-note').value
             };
-            if(!p.url) return alert("URL is required");
+            if(!p.url) return alert("請輸入網址！");
 
             const btn = document.getElementById('btn-create');
-            btn.disabled = true; btn.innerText = "Creating...";
+            btn.disabled = true; btn.innerText = "處理中...";
 
             fetch(GAS_URL, { method:"POST", body:JSON.stringify(p) })
                 .then(r=>r.json()).then(d => {
-                    btn.disabled = false; btn.innerText = "✨ Create Short Link";
+                    btn.disabled = false; btn.innerText = "✨ 建立短網址";
                     if(d.status === "success") {
-                        alert(`Success! Short ID: ${d.shortId}`);
+                        alert(`成功！短網址代碼為： ${d.shortId}`);
                         document.getElementById('new-url').value = "";
                         document.getElementById('new-title').value = "";
                         document.getElementById('new-shortid').value = "";
                         loadLinks(); // 重新整理列表
                     } else {
-                        alert("Error: " + d.message);
+                        alert("失敗: " + d.message);
                     }
                 });
         }
@@ -226,35 +228,38 @@
             // 這裡簡化，直接呼叫 getAll。實際建議帶上 token
             fetch(`${GAS_URL}?action=getAll`)
                 .then(r=>r.json()).then(res => {
-                    if(res.status !== "success") return list.innerHTML = "Load failed";
+                    if(res.status !== "success") return list.innerHTML = "載入失敗";
                     
                     let html = "";
                     const origin = window.location.origin + window.location.pathname;
                     
                     res.data.forEach(item => {
+                        // 修正結尾斜線問題，確保網址美觀
+                        const baseUrl = origin.endsWith('/') ? origin : origin + '/';
                         const shortUrl = `${origin}?id=${item.shortId}`;
+                        
                         html += `
                         <div class="link-item">
                             <div class="link-info">
-                                <h3>${item.title || '(No Title)'}</h3>
+                                <h3>${item.title || '(無標題)'}</h3>
                                 <div class="link-meta">
                                     <a href="${shortUrl}" target="_blank" style="color:#3498db;text-decoration:none;">/${item.shortId}</a> 
-                                    • ${item.clicks} clicks • ${item.date}
+                                    • ${item.clicks} 次點擊 • ${item.date}
                                 </div>
                             </div>
                             <div class="link-actions">
-                                <button class="small secondary" onclick="copy('${shortUrl}')">Copy</button>
+                                <button class="small secondary" onclick="copy('${shortUrl}')">複製</button>
                                 <button class="small secondary" onclick="showQR('${shortUrl}')">QR</button>
-                                <button class="small danger" onclick="deleteLink('${item.shortId}')">Del</button>
+                                <button class="small danger" onclick="deleteLink('${item.shortId}')">刪除</button>
                             </div>
                         </div>`;
                     });
-                    list.innerHTML = html || "<p style='color:#ccc;text-align:center'>No links yet.</p>";
+                    list.innerHTML = html || "<p style='color:#ccc;text-align:center'>目前沒有任何連結。</p>";
                 });
         }
 
         function deleteLink(id) {
-            if(!confirm("Are you sure?")) return;
+            if(!confirm("確定要刪除這個連結嗎？")) return;
             fetch(GAS_URL, {method:"POST", body:JSON.stringify({action:"delete", id:id})})
                 .then(r=>r.json()).then(()=>loadLinks());
         }
@@ -278,11 +283,11 @@
         }
 
         function copy(text) {
-            navigator.clipboard.writeText(text).then(()=>alert("Copied!"));
+            navigator.clipboard.writeText(text).then(()=>alert("已複製到剪貼簿！"));
         }
         
         function autoFillTitle() {
-             // 這裡先留空，因為我們已將抓標題邏輯移至後端
+             // 標題自動抓取已移至後端，前端保持空白即可
         }
 
         function logout() { location.reload(); }
@@ -300,7 +305,7 @@
         }
 
         function showQR(url) {
-            if(!qrLibLoaded) return alert("QR Library loading... please wait a second.");
+            if(!qrLibLoaded) return alert("QR Code 元件載入中，請稍候...");
             document.getElementById('qr-modal').classList.remove('hidden');
             document.getElementById('qr-canvas').innerHTML = "";
             
@@ -329,5 +334,4 @@
         }
     </script>
 </body>
-
 </html>
